@@ -12,8 +12,9 @@ router.param('id', userController.id)
 router
   .route("/user/:id")
   .put(setAuthUser, userController.update)
-//   .patch(userController.allUsers)
+  .patch(setAuthUser, userController.patch)
   .get(setAuthUser, userController.findOne);
+
 router.post("/user/login", userController.login);
 
 module.exports = router;

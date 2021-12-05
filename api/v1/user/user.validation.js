@@ -29,8 +29,7 @@ exports.update = async (obj)=>{
     const rules = {
         firstName:"required|string|minLength:1",
         lastName:"required|string|minLength:1",
-        email:"required|email",
-        password:"required|string|minLength:6",
+        email:"required|email"
     }
     const validator = new Validator(obj, rules)
     const passed = await validator.check()
@@ -42,8 +41,7 @@ exports.patch = async (obj)=>{
     const rules = {
         firstName:"string|minLength:1",
         lastName:"string|minLength:1",
-        email:"email",
-        password:"string|minLength:6",
+        email:"email"
     }
     const validator = new Validator(obj, rules)
     const passed = await validator.check()

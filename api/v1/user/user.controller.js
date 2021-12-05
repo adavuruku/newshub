@@ -149,7 +149,34 @@ exports.update = async (req, res, next) => {
       await transaction.rollback();
       next(error);
     }
-  };
+};
+exports.patch = async (req, res, next) => {
+    let session = null,
+      transaction = null;
+    try {
+      session = dbUtils.getSession(req);
+      transaction = session.beginTransaction();
+      // validate here
+      const isValid = await validateRequestBody.patch(req.body);
+      if (!isValid.passed) {
+        throw new AppError(null, 401, isValid.errors);
+      }
+      const object = req.object
+      const obj = prepareObject(req, ['password']);
+      Object.assign(object, obj)
+      const validatePayload = await validateCreate(transaction, object, object.id);
+      if (validatePayload) {
+        throw new AppError(validatePayload.message, validatePayload.status);
+      }
+      let newUser = await update(transaction, object);
+      await transaction.commit();
+      newUser = await formatResponse(newUser);
+      writeResponse(res, newUser, 201);
+    } catch (error) {
+      await transaction.rollback();
+      next(error);
+    }
+};
 exports.testGet = async (req, res, next) => {
   // next('hello erro', 201)
   next(new AppError("hello erro", 201));
