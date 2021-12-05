@@ -63,7 +63,7 @@ exports.update = async (session, obj) => {
     try {
         let query = [
             'MATCH (user:User {id: $id})',
-            'SET user.email = $email, user.firstName = $firstName, user.lastName = $lastName',
+            'SET user.email = $email, user.firstName = $firstName, user.lastName = $lastName , user.avatar = $avatar',
             'RETURN user'
         ].join('\n')
         return await session.run(query,
@@ -71,6 +71,7 @@ exports.update = async (session, obj) => {
             id:obj.id,
             email: obj.email,
             firstName: obj.firstName,
+            avatar: obj.avatar,
             lastName: obj.lastName
         }
       );
