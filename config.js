@@ -31,7 +31,9 @@ nconf.env(['PORT', 'NODE_ENV'])
     'neo4j': 'local',
     'neo4j-local': process.env.NEWS_DATABASE_URL || 'bolt://localhost:7687',
     'base_url': 'http://localhost:3000',
-    'api_path': '/api/v1'
+    'api_path': '/api/v1',
+    'superSecret':process.env.APP_SECRET,
+    'token_expires':3600 * 124 * 100
   });
 
 

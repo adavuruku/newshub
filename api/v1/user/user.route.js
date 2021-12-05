@@ -1,22 +1,19 @@
 const express = require("express");
 const router = express.Router();
+const setAuthUser = require("../../../middleware/setAuthUser");
+const userController = require("./user.controller");
 
-const {
-  check_is_Active,
-  check_is_admin,
-  check_is_consultant,
-  check_is_consultant_and_admin,
-} = require("../middlewares/check-auth");
-const userController = require("../controllers/userController");
+router
+  .route("/user")
+  .post(userController.create)
+  .get(setAuthUser, userController.find);
 
-//route to add phone to NIN
-router.params('id', userController.id)
-router.post("/comment", userController.add_new_user);
-router.post("/customer/register", userController.add_new_customer);
-router.patch(
-  "/customer/update",
-  check_is_Active,
-  userController.update_user_information
-);
+router.param('id', userController.id)
+router
+  .route("/user/:id")
+  .put(setAuthUser, userController.update)
+//   .patch(userController.allUsers)
+  .get(setAuthUser, userController.findOne);
+router.post("/user/login", userController.login);
 
 module.exports = router;

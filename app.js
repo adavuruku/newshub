@@ -3,54 +3,24 @@ require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const nconf = require("./config");
+const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
+
 // const swaggerJSDoc = require("swagger-jsdoc");
 // const swaggerUi = require("swagger-ui-express");
 const methodOverride = require("method-override");
-let errorHandler = require("errorhandler");
+// let errorHandler = require("errorhandler");
+let errorHandler = require("./helpers/erors");
 const bodyParser = require("body-parser");
-const setAuthUser = require("./middlewares/setAuthUser");
-let neo4jSessionCleanup = require("./middlewares/neo4jSessionCleanup");
+
+let neo4jSessionCleanup = require("./middleware/neo4jSessionCleanup");
 let writeError = require("./helpers/response").writeError;
 
 const app = express();
 
 
-/*
-var swaggerDefinition = {
-  info: {
-    title: "Neo4j Movie Demo API (Node/Express)",
-    version: "1.0.0",
-    description: "",
-  },
-  host: "localhost:3000",
-  basePath: "/",
-};
-
-// options for the swagger docs
-var options = {
-  // import swaggerDefinitions
-  swaggerDefinition: swaggerDefinition,
-  // path to the API docs
-  apis: ['api/v1/index.js'],
-};
-
-// initialize swagger-jsdoc
-var swaggerSpec = swaggerJSDoc(options);
-
-// serve swagger
-app.get("/swagger.json", function (req, res) {
-  res.setHeader("Content-Type", "application/json");
-  res.send(swaggerSpec);
-});
-
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-*/
-
-if (process.env.NODE_ENV === 'development') {
-    // only use in development
-    app.use(errorHandler())
-}
 app.use(methodOverride());
+app.use(cookieParser());
 app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
@@ -72,19 +42,30 @@ app.use(function (req, res, next) {
 
 
 // api custom middlewares
-app.use(setAuthUser);
 app.use(neo4jSessionCleanup);
 
-//map the v1 routes
-const v1Routes = require('./api/v1/index')
+// //map the v1 routes
+const v1Routes = require('./api/v1/index');
+const AppError = require("./helpers/app-error");
 app.use(nconf.get("api_path"), v1Routes)
 
-//api error handler
-app.use((err, req, res, next)=> {
-  if (err && err.status) {
-    writeError(res, err);
-  } else next(err);
-});
 
+
+//general error handle of new Error class error unhadle
+app.use((req, res, next)=> {
+    const err = new Error('Not Found')
+    err.status = 404
+    next(err)
+});
+app.use('*',(req, res, next)=> {
+    return next(new AppError('Not Found', 404))
+});
+//api error handler -> custom error thrown from the api
+app.use(errorHandler)
+app.use((err, req, res, next)=> {
+    if (err && err.status) {
+      writeError(res, err);
+    } else next(err);
+  });
 
 module.exports = app;

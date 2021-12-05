@@ -1,25 +1,34 @@
-var writeError = require('../helpers/response').writeError;
-var Users = require('../api/v1/user/user.model');
-var dbUtils = require('./dbUtils');
+// var dbUtils = require('./dbUtils');
+const jwt = require('jsonwebtoken');
+const AppError = require('../helpers/app-error');
+const config = require('../config')
 
-module.exports = function setAuthUser(req, res, next) {
-  var authHeader = req.headers['authorization'];
-  if (!authHeader) {
-    req.user = {id: null};
-    next();
+function setAuthUser (req, res, next) {
+  // console.log(req.headers.cookie)
+  const token = req.cookies['x-access-token'] || req.headers['x-access-token']
+  if (!token) {
+    req.userId = null
+    req.email = null
+    const appError =  new AppError('No Authorization Provided', 401);
+    next(appError)
   }
   else {
-    var match = authHeader.match(/^Token (\S+)/);
-    if (!match || !match[1]) {
-      return writeError(res, {detail: 'invalid authorization format. Follow `Token <token>`'}, 401);
-    }
-    var token = match[1];
-
-    Users.me(dbUtils.getSession(req), token)
-      .then(user => {
-        req.user = user;
-        next();
-      })
-      .catch(next);
+    jwt.verify(token, config.get('superSecret'), async(error, decoded)=>{
+      if(error){
+        let message = 'Invalid token'
+        if(error.name ==='TokenExpiredError'){
+          message =`${message} :: Please login to continue`
+        }else{
+          message =`${message} :: Failed to authenticated token`
+        }
+        const appError =  new AppError(message, 401);
+        next(appError)
+      }else{
+        req.userId = decoded.id
+        req.email = decoded.email
+        next()
+      }
+    })
   }
 };
+module.exports = setAuthUser
