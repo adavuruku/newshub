@@ -39,8 +39,12 @@ exports.create = async (req, res, next) => {
     }
     //create the user
     let newUser = await create(transaction, obj);
-    await transaction.commit();
+    const tokentPayload = _.pick(newUser, ["email", "id"]);
+    const token = await signToken(tokentPayload);
+    Object.assign(newUser, { token });
+    setCookies(req, res, token);
     newUser = await formatResponse(newUser);
+    await transaction.commit();
     writeResponse(res, newUser, 201);
   } catch (error) {
     await transaction.rollback();

@@ -39,7 +39,7 @@ exports.validateCreate = async(session, obj, currentId = "") => {
 }
 exports.create = async (session, obj) => {
     try {
-        return await session.run('CREATE (user:User {id: $id, email: $email, password: $password, api_key: $api_key, firstName:$firstName, lastName:$lastName, avatar:$avatar}) RETURN user',
+        const userExist =  await session.run('CREATE (user:User {id: $id, email: $email, password: $password, api_key: $api_key, firstName:$firstName, lastName:$lastName, avatar:$avatar}) RETURN user',
         {
             id: uuid.v4(),
             email: obj.email,
@@ -53,7 +53,7 @@ exports.create = async (session, obj) => {
             })
         }
       );
-    //   return results.records[0].get('user');
+      return _.get(userExist.records[0].get('user'), 'properties');
     } catch (error) {
         throw new AppError(`Server Error: ${error}`,500)
     }
