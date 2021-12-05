@@ -6,7 +6,8 @@ const userController = require("./user.controller");
 router
   .route("/user")
   .post(userController.create)
-  .get(setAuthUser, userController.find);
+  .get(setAuthUser, userController.find)
+  .delete(setAuthUser, userController.delete);;
 
 router.param('id', userController.id)
 router
@@ -16,5 +17,6 @@ router
   .get(setAuthUser, userController.findOne);
 
 router.post("/user/login", userController.login);
+router.post("/user/changepassword",setAuthUser, userController.updatePassword);
 
 module.exports = router;

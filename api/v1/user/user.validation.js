@@ -10,7 +10,6 @@ exports.create = async (obj)=>{
     const validator = new Validator(obj, rules)
     const passed = await validator.check()
     const errors = await validator.errors
-    console.log({passed, errors})
     return {passed, errors}
 }
 
@@ -53,7 +52,7 @@ exports.patch = async (obj)=>{
 
 exports.changePassword = async (obj)=>{
     const rules = {
-        existingPassword:"required|string|minLength:6",
+        oldPassword:"required|string|minLength:6",
         newPassword:"required|string|minLength:6"
     }
     const validator = new Validator(obj, rules)

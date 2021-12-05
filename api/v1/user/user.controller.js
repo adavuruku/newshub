@@ -1,16 +1,12 @@
 "use strict";
 const _ = require("lodash");
 const dbUtils = require("../../../middleware/dbUtils");
-const uuid = require("node-uuid");
-const randomstring = require("randomstring");
-const crypto = require("crypto");
 const AppError = require("../../../helpers/app-error");
 // const User = require('./user.model');
-// const Comment = require('../comment/comment.model');
-// const Post = require('../post/post.model');
 const {
     create,
     update,
+    changePassword,
   validateCreate,
   login,
   prepareObject,
@@ -59,7 +55,7 @@ exports.id = async (req, res, next) => {
     session = dbUtils.getSession(req);
     transaction = session.beginTransaction();
     let dbUser = await transaction.run(
-      "MATCH (user:User {id:$id}) RETURN user",
+      "MATCH (user:User {id:$id, deleted:false}) RETURN user limit 1",
       {
         id: req.params.id,
       }
@@ -76,7 +72,7 @@ exports.id = async (req, res, next) => {
   }
 };
 exports.findOne = async (req, res, next) => {
-    let obj = _.omit(req.object, [ 'password', 'api_key'])
+    let obj = formatResponse(_.omit(req.object, [ 'password', 'api_key']))
     writeResponse(res, obj, 200);
 };
   
@@ -91,7 +87,7 @@ exports.login = async (req, res, next) => {
     if (!isValid.passed) {
       throw new AppError(null, 401, isValid.errors);
     }
-    const obj = prepareCreateObject(req);
+    const obj = prepareObject(req);
     let dbUser = await login(transaction, obj);
     if (!dbUser) {
       throw new AppError("Invalid Login Credentials (Email / Password)", 400);
@@ -99,9 +95,33 @@ exports.login = async (req, res, next) => {
     const tokentPayload = _.pick(dbUser, ["email", "id"]);
     const token = await signToken(tokentPayload);
     Object.assign(dbUser, { token });
-    await transaction.commit();
     setCookies(req, res, token);
     dbUser = await formatResponse(dbUser);
+    await transaction.commit();
+    writeResponse(res, dbUser, 200);
+  } catch (error) {
+    await transaction.rollback();
+    next(error);
+  }
+};
+exports.updatePassword = async (req, res, next) => {
+  let session = null,
+    transaction = null;
+  try {
+    session = dbUtils.getSession(req);
+    transaction = session.beginTransaction();
+    // validate here
+    const isValid = await validateRequestBody.changePassword(req.body);
+    if (!isValid.passed) {
+      throw new AppError(null, 401, isValid.errors);
+    }
+    const obj = prepareObject(req);
+    let dbUser = await changePassword(transaction, obj);
+    if (!dbUser) {
+      throw new AppError("Enter your previous Password", 400);
+    }
+    dbUser = await formatResponse(dbUser);
+    await transaction.commit();
     writeResponse(res, dbUser, 200);
   } catch (error) {
     await transaction.rollback();
@@ -117,8 +137,8 @@ exports.find = async (req, res, next) => {
     let dbUser = await transaction.run(
       "MATCH (user:User) RETURN user ORDER BY user.email"
     );
-    await transaction.commit();
     dbUser = await formatResponse(dbUser);
+    await transaction.commit();
     writeResponse(res, dbUser, 200);
   } catch (error) {
     await transaction.rollback();
@@ -146,8 +166,8 @@ exports.update = async (req, res, next) => {
       //update the user
       Object.assign(object, obj)
       let newUser = await update(transaction, object);
-      await transaction.commit();
       newUser = await formatResponse(newUser);
+      await transaction.commit();
       writeResponse(res, newUser, 201);
     } catch (error) {
       await transaction.rollback();
@@ -173,20 +193,30 @@ exports.patch = async (req, res, next) => {
         throw new AppError(validatePayload.message, validatePayload.status);
       }
       let newUser = await update(transaction, object);
-      await transaction.commit();
       newUser = await formatResponse(newUser);
+      await transaction.commit();
       writeResponse(res, newUser, 201);
     } catch (error) {
       await transaction.rollback();
       next(error);
     }
 };
-exports.testGet = async (req, res, next) => {
-  // next('hello erro', 201)
-  next(new AppError("hello erro", 201));
-  // try {
-  //     throw {username: 'username already in use', status: 401}
-  // } catch (error) {
-  //     next(error)
-  // }
+
+exports.delete = async (req, res, next) => {
+  let session = null,
+    transaction = null;
+  try {
+    session = dbUtils.getSession(req);
+    transaction = session.beginTransaction();
+    const query = [
+      'MATCH (user:Post {id:$userId})',
+      'set deleted = true'
+    ].join('\n');
+    await transaction.run(query,{userId:req.userId});
+    await transaction.commit();
+    writeResponse(res, {message:'User Account Deleted'}, 200);
+  } catch (error) {
+    await transaction.rollback();
+    next(error);
+  }
 };

@@ -15,8 +15,8 @@ exports.prepareObject = (req, removeFromObject= []) => {
     if(removeFromObject.length > 0){
         obj = _.omit(obj, removeFromObject)
     }
-    if(req.authId){
-        const user = req.authId;
+    if(req.userId){
+        const user = req.userId;
         Object.assign(obj, {user})
     }
     return obj
@@ -39,7 +39,7 @@ exports.validateCreate = async(session, obj, currentId = "") => {
 }
 exports.create = async (session, obj) => {
     try {
-        const userExist =  await session.run('CREATE (user:User {id: $id, email: $email, password: $password, api_key: $api_key, firstName:$firstName, lastName:$lastName, avatar:$avatar}) RETURN user',
+        const userExist =  await session.run('CREATE (user:User {id: $id, email: $email, password: $password, api_key: $api_key, firstName:$firstName, lastName:$lastName, avatar:$avatar, deleted:false}) RETURN user',
         {
             id: uuid.v4(),
             email: obj.email,
@@ -81,10 +81,27 @@ exports.update = async (session, obj) => {
 };
 exports.login = async(session, obj) => {
     try {
-        const userExist = await session.run('MATCH (user:User {email: $email}) RETURN user LIMIT 1', {email: obj.email})
+        const userExist = await session.run('MATCH (user:User {email: $email, deleted:false}) RETURN user LIMIT 1', {email: obj.email})
         if (!_.isEmpty(userExist.records)) {
             let dbUser = _.get(userExist.records[0].get('user'), 'properties');
             if (dbUser.password === hashPassword(obj.password)) {
+                dbUser = _.omit(dbUser, ['password'])
+                return dbUser
+            }
+        }
+        return null
+    } catch (error) {
+        throw new AppError(`Server Error: ${error}`,500)
+    }
+}
+
+exports.changePassword = async(session, obj) => {
+    try {
+        let userExist = await session.run('MATCH (user:User {id: $id, deleted:false}) RETURN user LIMIT 1', {id: obj.user})
+        if (!_.isEmpty(userExist.records)) {
+            let dbUser = _.get(userExist.records[0].get('user'), 'properties');
+            if (dbUser.password === hashPassword(obj.oldPassword)) {
+                userExist = await session.run('MATCH (user:User {id: $id, deleted:false}) set user.password = $password RETURN user LIMIT 1', {id: dbUser.id, password: hashPassword(obj.newPassword)})
                 dbUser = _.omit(dbUser, ['password'])
                 return dbUser
             }

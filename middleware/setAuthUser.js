@@ -4,7 +4,6 @@ const AppError = require('../helpers/app-error');
 const config = require('../config')
 
 function setAuthUser (req, res, next) {
-  // console.log(req.headers.cookie)
   const token = req.cookies['x-access-token'] || req.headers['x-access-token']
   if (!token) {
     req.userId = null
