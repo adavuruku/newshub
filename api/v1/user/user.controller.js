@@ -2,6 +2,8 @@
 const _ = require("lodash");
 const dbUtils = require("../../../middleware/dbUtils");
 const AppError = require("../../../helpers/app-error");
+const {prepPagination} = require("../../../helpers/population");
+
 // const User = require('./user.model');
 const {
     create,
@@ -16,7 +18,7 @@ const {
 const { writeResponse, formatResponse } = require("../../../helpers/response");
 
 const validateRequestBody = require("./user.validation");
-
+const mainTable = 'user'
 exports.create = async (req, res, next) => {
   let session = null,
     transaction = null;
@@ -217,6 +219,41 @@ exports.delete = async (req, res, next) => {
     writeResponse(res, {message:'User Account Deleted'}, 200);
   } catch (error) {
     await transaction.rollback();
+    next(error);
+  }
+};
+
+exports.findUserPopulation = async (req, res, next) => {
+  let session = null,
+    transaction = null;
+  try {
+    let san = {}
+    Object.assign(san, req.query)
+    Object.assign(san, req.params)
+    console.log('req.query', req.query)
+    console.log('req.params', req.params)
+    let population = []
+    if(san.population){
+      population = JSON.parse(san.population)
+      delete san.population
+    }
+    session = dbUtils.getSession(req);
+    transaction = session.beginTransaction();
+    console.log(mainTable, san, population)
+    let resReturn = await prepPagination(mainTable, san, population, transaction) 
+    let dbUser = await formatResponse(resReturn);
+    await transaction.commit();
+    // session = dbUtils.getSession(req);
+    // transaction = session.beginTransaction();
+    // let dbUser = await transaction.run(
+    //   "MATCH (user:User) RETURN user ORDER BY user.email"
+    // );
+    // dbUser = await formatResponse(dbUser);
+    // await transaction.commit();
+    
+    writeResponse(res, dbUser, 200);
+  } catch (error) {
+    // await transaction.rollback();
     next(error);
   }
 };

@@ -8,8 +8,8 @@ router
   .post(userController.create)
   .get(setAuthUser, userController.find)
   .delete(setAuthUser, userController.delete);;
-
-router.param('id', userController.id)
+router.get('/user/populate/:id', userController.findUserPopulation)
+// router.param('id', userController.id)
 router
   .route("/user/:id")
   .put(setAuthUser, userController.update)

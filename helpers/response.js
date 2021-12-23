@@ -10,6 +10,7 @@ let formatDate = (givenDate) => {
   return `${formatDateLength(givenDate.year.low)}-${formatDateLength(givenDate.month.low)}-${formatDateLength(givenDate.day.low)} ${formatDateLength(givenDate.hour.low)}:${formatDateLength(givenDate.minute.low)}:${formatDateLength(givenDate.second.low)}` 
 }
 exports.formatResponse = async (resultObj) => {
+  console.log('resultObj : ', resultObj)
   let cleandObject = ['password', 'api_key', 'deleted','active']
   let finalResult = []
     if(_.isArray(resultObj.records)){
