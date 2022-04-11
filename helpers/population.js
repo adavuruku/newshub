@@ -1,13 +1,19 @@
 const {populatSchema, nodeNames} = require('./populateSchema')
 exports.prepPagination = async (mainTable, mainTableQuery, populationOption, transaction) =>{
+
+//     MATCH (user:User { id: '07bd4120-b078-4584-bdee-38366183acef' })
+// OPTIONAL MATCH (user)<-[:CREATED_BY]-(post:Post {deleted:false})
+//  RETURN distinct user, collect(distinct post) as p
+
     console.log(mainTable, mainTableQuery, populationOption)
     console.log('...mainTableQuery', {...mainTableQuery})
     // let mainQuery = `MATCH (${mainTable}:${nodeNames[mainTable]} ${{...mainTableQuery}})`
+    // let mainQuery = `MATCH (${mainTable}:${nodeNames[mainTable]})`
     let mainQuery = `MATCH (${mainTable}:${nodeNames[mainTable]} { id: '07bd4120-b078-4584-bdee-38366183acef' })`
     let allQuery = [mainQuery]
     let populationShema = populatSchema[mainTable]
     console.log('populationShema :: ',populationShema)
-    let returnValues = [mainTable]
+    let returnValues = [`DISTINCT ${mainTable}`]
     if(populationOption.length > 0){ 
         for(let popu of populationOption){
             console.log('popu ', popu)
@@ -16,7 +22,7 @@ exports.prepPagination = async (mainTable, mainTableQuery, populationOption, tra
                 const leftDirection = relationship === '<-' ? relationship:'-'
                 const rightDirection = relationship === '->' ? relationship:'-'
                 const popQuery = `OPTIONAL MATCH (${mainTable})${leftDirection}[:${relationshiplabel}]${rightDirection}(${popu}:${nodeNames[popu]} {deleted:false})`
-                returnValues.push(popu)
+                returnValues.push(`collect( distinct ${popu}) as ${popu}`)
                 allQuery.push(popQuery)                
             }
         }

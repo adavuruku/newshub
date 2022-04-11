@@ -1,12 +1,10 @@
 exports.populatSchema = {
     post:{
         user:{
-            nodeName:'User',
             relationship:'->',
             relationshiplabel:':CREATED_BY'
         },
         comment:{
-            nodeName:'Comment',
             relationship:'->',
             relationshiplabel:'COMMENTS'
         }
@@ -15,11 +13,17 @@ exports.populatSchema = {
         post:{
             relationship:'<-',
             relationshiplabel:'CREATED_BY'
-        },
-        comment:{
+        }
+    },
+    comment:{
+        post:{
             relationship:'<-',
             relationshiplabel:'CREATED_BY'
-        }
+        },
+        user:{
+            relationship:'->',
+            relationshiplabel:':CREATED_BY'
+        },
     }
 }
 

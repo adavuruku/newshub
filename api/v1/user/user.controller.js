@@ -15,7 +15,7 @@ const {
   setCookies,
   signToken,
 } = require("./user.processor");
-const { writeResponse, formatResponse } = require("../../../helpers/response");
+const { writeResponse, formatResponse, formatResponseAll, formatResponseNew } = require("../../../helpers/response");
 
 const validateRequestBody = require("./user.validation");
 const mainTable = 'user'
@@ -137,9 +137,11 @@ exports.find = async (req, res, next) => {
     session = dbUtils.getSession(req);
     transaction = session.beginTransaction();
     let dbUser = await transaction.run(
-      "MATCH (user:User) RETURN user ORDER BY user.email"
+      "MATCH (user:User) RETURN distinct user ORDER BY user.email"
     );
-    dbUser = await formatResponse(dbUser);
+    // dbUser = await formatResponse(dbUser);
+    console.log('here')
+    dbUser = await formatResponseNew(dbUser);
     await transaction.commit();
     writeResponse(res, dbUser, 200);
   } catch (error) {
@@ -241,7 +243,8 @@ exports.findUserPopulation = async (req, res, next) => {
     transaction = session.beginTransaction();
     console.log(mainTable, san, population)
     let resReturn = await prepPagination(mainTable, san, population, transaction) 
-    let dbUser = await formatResponse(resReturn);
+    // let dbUser = await formatResponseAll(resReturn);
+    let dbUser = await formatResponseNew(resReturn);
     await transaction.commit();
     // session = dbUtils.getSession(req);
     // transaction = session.beginTransaction();

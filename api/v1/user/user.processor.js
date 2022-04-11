@@ -81,7 +81,7 @@ exports.update = async (session, obj) => {
 };
 exports.login = async(session, obj) => {
     try {
-        const userExist = await session.run('MATCH (user:User {email: $email, deleted:false}) RETURN user LIMIT 1', {email: obj.email})
+        const userExist = await session.run('MATCH (user:User {email: $email, deleted:false}) RETURN user LIMIT 1', {email: obj.email, skip:2})
         if (!_.isEmpty(userExist.records)) {
             let dbUser = _.get(userExist.records[0].get('user'), 'properties');
             if (dbUser.password === hashPassword(obj.password)) {
